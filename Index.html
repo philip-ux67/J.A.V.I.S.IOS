@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>J.A.R.V.I.S. iOS</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #030814;
+            color: #00ffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(5, 20, 38, 0.8);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.25);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 18px;
+            color: #00ffff;
+            text-shadow: 0 0 6px rgba(0, 255, 255, 0.8);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #00ffff;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #00ffff;
+        }
+
+        .header-badge {
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            color: #00ffff;
+            background: rgba(0, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        /* Main Container Views */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            margin: 8px;
+            background: rgba(5, 20, 38, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 16px;
+        }
+
+        .view {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        /* Chat Bubbles */
+        .message-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .msg-badge {
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .msg-badge.jarvis {
+            color: #00ffff;
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+        }
+
+        .msg-badge.sir {
+            color: #ffa500;
+            background: rgba(255, 165, 0, 0.15);
+            border: 1px solid rgba(255, 165, 0, 0.5);
+        }
+
+        .msg-bubble {
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 15px;
+            line-height: 1.4;
+            max-width: 80%;
+        }
+
+        .msg-bubble.jarvis {
+            color: rgba(0, 255, 255, 0.9);
+            background: rgba(0, 255, 255, 0.06);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .msg-bubble.sir {
+            color: rgba(255, 165, 0, 0.9);
+            background: rgba(255, 165, 0, 0.06);
+            border: 1px solid rgba(255, 165, 0, 0.2);
+        }
+
+        /* Dashboard View */
+        .dashboard-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding-bottom: 20px;
+        }
+
+        .arc-reactor {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .arc-ring-1 {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 4px solid rgba(0, 255, 255, 0.2);
+            border-radius: 50%;
+        }
+
+        .arc-ring-2 {
+            position: absolute;
+            width: 84px;
+            height: 84px;
+            border: 2px dashed rgba(0, 255, 255, 0.6);
+            border-radius: 50%;
+        }
+
+        .arc-core {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 255, 255, 0.15);
+            border-radius: 50%;
+            box-shadow: 0 0 15px #00ffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00ffff;
+            font-size: 18px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+        }
+
+        .stat-card {
+            background: #051426;
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffffff;
+            margin: 4px 0;
+        }
+
+        .stat-label {
+            font-family: monospace;
+            font-size: 9px;
+            color: rgba(0, 255, 255, 0.7);
+        }
+
+        .history-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .history-title {
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            color: rgba(0, 255, 255, 0.7);
+            margin-bottom: 4px;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #051426;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.15);
+            font-size: 12px;
+        }
+
+        /* Control Bar & Input (Vollständig zoom-frei optimiert) */
+        .input-bar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            background: transparent;
+        }
+
+        .jarvis-input {
+            flex: 1;
+            background: #051426;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            color: #00ffff;
+            font-size: 16px; /* Verhindert automatisches Einzoomen auf iOS (min 16px) */
+            outline: none;
+        }
+
+        .jarvis-input:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+        }
+
+        .action-btn {
+            background: #051426;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00ffff;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .action-btn.mic-active {
+            background: rgba(255, 0, 0, 0.8);
+            border-color: red;
+            color: white;
+        }
+
+        .action-btn.send {
+            background: rgba(0, 255, 255, 0.15);
+            border-color: rgba(0, 255, 255, 0.5);
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            background: rgba(5, 20, 38, 0.9);
+            border-top: 1px solid rgba(0, 255, 255, 0.25);
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: gray;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .nav-item.active {
+            color: #00ffff;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <div class="status-dot"></div>
+            J.A.R.V.I.S.
+        </div>
+        <div class="header-badge">iOS WEB</div>
+    </header>
+
+    <div class="main-container">
+        <!-- Chat View -->
+        <div id="chatView" class="view active">
+            <div id="messageContainer" style="display: flex; flexDirection: column; gap: 12px;"></div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="view">
+            <div class="dashboard-content">
+                <div class="arc-reactor">
+                    <div class="arc-ring-1"></div>
+                    <div class="arc-ring-2"></div>
+                    <div class="arc-core">⚡</div>
+                </div>
+                <div style="font-family: monospace; font-size: 12px; font-weight: bold; color: #00ffff;">ARC REACTOR: ONLINE</div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">GESAMT</div>
+                        <div id="statTotal" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">JARVIS</div>
+                        <div id="statJarvis" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">SIR</div>
+                        <div id="statSir" class="stat-value">0</div>
+                    </div>
+                </div>
+
+                <div class="history-section">
+                    <div class="history-title">PROTOKOLL-GESPRÄCHE</div>
+                    <div id="historyList" style="display: flex; flex-direction: column; gap: 6px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Eingabe & Controls -->
+    <div class="input-bar">
+        <input type="text" id="userInput" class="jarvis-input" placeholder="Anweisung an J.A.R.V.I.S...." autocomplete="off">
+        <button id="micBtn" class="action-btn" onclick="toggleSpeechRecognition()">🎤</button>
+        <button class="action-btn send" onclick="handleSend()">🚀</button>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <button id="navChat" class="nav-item active" onclick="switchTab(0)">
+            <span>💬</span>
+            <span>CHAT</span>
+        </button>
+        <button id="navStatus" class="nav-item" onclick="switchTab(1)">
+            <span>📊</span>
+            <span>STATUS</span>
+        </button>
+    </div>
+
+    <script>
+        const apiKey = "AQ.Ab8RN6IGnCLonR3vgfyPeqbxkQx8q3MHY8bQVEifoqXX-EWtfw"; // Trage hier deinen Gemini Key ein
+        let messages = [];
+        let isListening = false;
+        let recognition = null;
+
+        // Init JARVIS greeting
+        window.onload = () => {
+            addMessage("J.A.R.V.I.S.", "Guten Tag, Sir. Alle iOS-Protokolle laufen optimal. Wie kann ich Ihnen auf Ihrem iPhone heute behilflich sein?", true);
+            speak("J.A.R.V.I.S. Online auf Ihrem iPhone, Sir.");
+            setupSpeechRecognition();
+        };
+
+        function addMessage(sender, text, isJarvis) {
+            messages.push({ sender, text, isJarvis });
+            renderMessages();
+            updateDashboard();
+        }
+
+        function renderMessages() {
+            const container = document.getElementById("messageContainer");
+            container.innerHTML = "";
+            messages.forEach(msg => {
+                const row = document.createElement("div");
+                row.className = "message-row";
+                
+                const badge = document.createElement("div");
+                badge.className = `msg-badge ${msg.isJarvis ? 'jarvis' : 'sir'}`;
+                badge.innerText = msg.isJarvis ? "J" : "SIR";
+
+                const bubble = document.createElement("div");
+                bubble.className = `msg-bubble ${msg.isJarvis ? 'jarvis' : 'sir'}`;
+                bubble.innerText = msg.text;
+
+                row.appendChild(badge);
+                row.appendChild(bubble);
+                container.appendChild(row);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateDashboard() {
+            document.getElementById("statTotal").innerText = messages.length;
+            document.getElementById("statJarvis").innerText = messages.filter(m => m.isJarvis).length;
+            document.getElementById("statSir").innerText = messages.filter(m => !m.isJarvis).length;
+
+            const historyList = document.getElementById("historyList");
+            historyList.innerHTML = "";
+            messages.forEach((msg, index) => {
+                const item = document.createElement("div");
+                item.className = "history-item";
+                item.innerHTML = `
+                    <span style="font-family:monospace; color:#00ffff; width:30px;">#${index+1}</span>
+                    <span style="font-family:monospace; color:${msg.isJarvis ? '#00ffff':'#ffa500'}; width:50px;">${msg.sender}</span>
+                    <span style="color:rgba(255,255,255,0.8); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">${msg.text}</span>
+                `;
+                historyList.appendChild(item);
+            });
+        }
+
+        function switchTab(tabIndex) {
+            document.getElementById("chatView").classList.toggle("active", tabIndex === 0);
+            document.getElementById("dashboardView").classList.toggle("active", tabIndex === 1);
+            document.getElementById("navChat").classList.toggle("active", tabIndex === 0);
+            document.getElementById("navStatus").classList.toggle("active", tabIndex === 1);
+            if(tabIndex === 1) updateDashboard();
+        }
+
+        function handleSend() {
+            const input = document.getElementById("userInput");
+            const text = input.value.trim();
+            if(!text) return;
+
+            addMessage("SIR", text, false);
+            input.value = "";
+            fetchGeminiResponse(text);
+        }
+
+        document.getElementById("userInput").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                handleSend();
+            }
+        });
+
+        // Film-nahe Sprachausgabe (AVSynthesis analog)
+        function speak(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const cleanText = text.replace(/[*#]/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'de-DE';
+            utterance.rate = 0.95; // Etwas präziser
+            utterance.pitch = 0.8;  // Tiefe Film-Stimme
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Gemini API Anbindung
+        async function fetchGeminiResponse(prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            const body = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: "Du bist J.A.R.V.I.S., die KI von Tony Stark, integriert auf einem iPhone. Antworte kurz, hochintelligent, leicht ironisch und stets höflich auf Deutsch mit 'Sir'." }] }
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sir, es gab ein Problem bei der Datenverarbeitung.";
+                addMessage("J.A.R.V.I.S.", reply, true);
+                speak(reply);
+            } else {
+                addMessage("J.A.R.V.I.S.", "Sir, Verbindung zum Mainframe gestört.", true);
+                speak("Sir, Verbindung zum Mainframe gestört.");
+            }
+        }
+
+        // Web Speech API für Mikrofon
+        function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'de-DE';
+                recognition.interimResults = false;
+                recognition.onresult = (e) => {
+                    document.getElementById("userInput").value = e.results[0][0].transcript;
+                    handleSend();
+                };
+                recognition.onend = () => {
+                    isListening = false;
+                    document.getElementById("micBtn").classList.remove("mic-active");
+                };
+            }
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognition) {
+                alert("Spracherkennung wird von diesem Browser leider nicht unterstützt, Sir.");
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+                isListening = true;
+                document.getElementById("micBtn").classList.add("mic-active");
+            }
+        }
+    </script>
+</body>
+</html>
