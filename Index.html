@@ -89,6 +89,15 @@
             display: flex;
         }
 
+        /* API Key Bar */
+        .api-key-bar {
+            display: flex;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(5, 20, 38, 0.7);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
         /* Chat Bubbles */
         .message-row {
             display: flex;
@@ -294,6 +303,13 @@
             border-color: rgba(0, 255, 255, 0.5);
         }
 
+        .action-btn.save-key {
+            padding: 0 16px;
+            width: auto;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
         /* Bottom Nav */
         .bottom-nav {
             display: flex;
@@ -332,10 +348,16 @@
         <div class="header-badge">iOS WEB</div>
     </header>
 
+    <!-- API Key Eingabefläche (Sicher integriert) -->
+    <div class="api-key-bar">
+        <input type="password" id="apiKeyInput" class="jarvis-input" placeholder="Gemini API-Schlüssel eingeben..." autocomplete="off">
+        <button class="action-btn send save-key" onclick="saveApiKey()">Speichern</button>
+    </div>
+
     <div class="main-container">
         <!-- Chat View -->
         <div id="chatView" class="view active">
-            <div id="messageContainer" style="display: flex; flexDirection: column; gap: 12px;"></div>
+            <div id="messageContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </div>
 
         <!-- Dashboard View -->
@@ -391,17 +413,35 @@
     </div>
 
     <script>
-        const apiKey = ""; // Trage hier deinen Gemini Key ein
+        let apiKey = localStorage.getItem("JARVIS_API_KEY") || "";
         let messages = [];
         let isListening = false;
         let recognition = null;
 
         // Init JARVIS greeting
         window.onload = () => {
+            if (apiKey) {
+                document.getElementById("apiKeyInput").value = apiKey;
+            } else {
+                addMessage("J.A.R.V.I.S.", "Sir, bitte tragen Sie oben Ihren Gemini API-Schlüssel ein, um den Dienst zu aktivieren.", true);
+            }
             addMessage("J.A.R.V.I.S.", "Guten Tag, Sir. Alle iOS-Protokolle laufen optimal. Wie kann ich Ihnen auf Ihrem iPhone heute behilflich sein?", true);
             speak("J.A.R.V.I.S. Online auf Ihrem iPhone, Sir.");
             setupSpeechRecognition();
         };
+
+        function saveApiKey() {
+            const inputVal = document.getElementById("apiKeyInput").value.trim();
+            if (inputVal) {
+                apiKey = inputVal;
+                localStorage.setItem("JARVIS_API_KEY", apiKey);
+                addMessage("J.A.R.V.I.S.", "API-Schlüssel wurde erfolgreich gespeichert, Sir.", true);
+            } else {
+                localStorage.removeItem("JARVIS_API_KEY");
+                apiKey = "";
+                addMessage("J.A.R.V.I.S.", "API-Schlüssel wurde entfernt, Sir.", true);
+            }
+        }
 
         function addMessage(sender, text, isJarvis) {
             messages.push({ sender, text, isJarvis });
@@ -488,7 +528,13 @@
 
         // Gemini API Anbindung
         async function fetchGeminiResponse(prompt) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            if (!apiKey) {
+                addMessage("J.A.R.V.I.S.", "Sir, es ist kein API-Schlüssel vorhanden. Bitte geben Sie oben einen gültigen Schlüssel ein.", true);
+                speak("Sir, kein API Schlüssel vorhanden.");
+                return;
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             const body = {
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
                 systemInstruction: { parts: [{ text: "Du bist J.A.R.V.I.S., die KI von Tony Stark, integriert auf einem iPhone. Antworte kurz, hochintelligent, leicht ironisch und stets höflich auf Deutsch mit 'Sir'." }] }
@@ -504,7 +550,7 @@
                 const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sir, es gab ein Problem bei der Datenverarbeitung.";
                 addMessage("J.A.R.V.I.S.", reply, true);
                 speak(reply);
-            } else {
+            } catch(e) {
                 addMessage("J.A.R.V.I.S.", "Sir, Verbindung zum Mainframe gestört.", true);
                 speak("Sir, Verbindung zum Mainframe gestört.");
             }
